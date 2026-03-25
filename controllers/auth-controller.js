@@ -352,9 +352,17 @@ async function loginOrCreateUserWithGoogleOAuth(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     if (user?.role === 'admin') {
-      res.redirect('http://localhost:5173/admin-dashboard');
+      if (process.env.NODE_ENV === 'development') {
+        res.redirect('http://localhost:5173/admin-dashboard');
+      } else {
+        res.redirect('https://nuro-care.vercel.app/admin-dashboard');
+      }
     } else if (user?.role === 'client') {
-      res.redirect('http://localhost:5173/patient-dashboard');
+      if (process.env.NODE_ENV === 'development') {
+        res.redirect('http://localhost:5173/patient-dashboard');
+      } else {
+        res.redirect('https://nuro-care.vercel.app/patient-dashboard');
+      }
     }
   } catch (error) {
     res.status(500).json({
