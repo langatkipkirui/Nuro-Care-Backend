@@ -1,9 +1,9 @@
 {
-  "name": "mekin-backend",
+  "name": "nuro-backend",
   "version": "1.0.0",
-  "description": "A backend server for mekin home care",
+  "description": "A backend server for nuro home care",
   "keywords": [
-    "Mekin",
+    "Nuro",
     "Home",
     "Care"
   ],

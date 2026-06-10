@@ -2,12 +2,18 @@ const passport = require('passport');
 const { Strategy } = require('passport-google-oauth20');
 const User = require('../models/user-model');
 const crypto = require('crypto');
+const googleCallbackUrl =
+  process.env.GOOGLE_CALLBACK_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://nuro-care-backend.onrender.com/auth/google/callback'
+    : 'http://localhost:5000/auth/google/callback');
+
 passport.use(
   new Strategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      callbackURL: googleCallbackUrl,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {

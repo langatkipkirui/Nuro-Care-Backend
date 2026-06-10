@@ -9,11 +9,14 @@ async function updateSiteSettings(req, res) {
       heroDescription,
       trustSectionTitle,
       trustSectionDescription,
-      whyMekinTitle,
-      whyMekinDescription,
+      whyNuroTitle,
+      whyNuroDescription,
       trustKeywords,
       homepageFaqs,
     } = req.body;
+
+    const whyTitle = whyNuroTitle;
+    const whyDescription = whyNuroDescription;
 
     if (
       !heroTitle ||
@@ -24,10 +27,10 @@ async function updateSiteSettings(req, res) {
       trustSectionTitle.length < 10 ||
       !trustSectionDescription ||
       trustSectionDescription.length < 100 ||
-      !whyMekinTitle ||
-      whyMekinTitle.length < 10 ||
-      !whyMekinDescription ||
-      whyMekinDescription.length < 100 ||
+      !whyTitle ||
+      whyTitle.length < 10 ||
+      !whyDescription ||
+      whyDescription.length < 100 ||
       !trustKeywords ||
       trustKeywords.length < 1 ||
       !homepageFaqs ||
@@ -46,7 +49,7 @@ async function updateSiteSettings(req, res) {
         HeroSubHeader: heroDescription,
         HeroImage: {
           url: 'https://res.cloudinary.com/dwwaetdws/image/upload/w_960,c_fill,q_auto,f_auto/v1767189325/realistic-scene-with-elderly-care-senior-people_l1mbnf',
-          publicId: null
+          publicId: null,
         },
         TrustHeader: trustSectionTitle,
         TrustVideo: {
@@ -54,9 +57,9 @@ async function updateSiteSettings(req, res) {
           publicId: null,
         },
         TrustSubHeader: trustSectionDescription,
-        WhyMekinHeader: whyMekinTitle,
-        WhyMekinSubHeader: whyMekinDescription,
-        WhyMekinTrustPoints: trustKeywords,
+        WhyNuroHeader: whyTitle,
+        WhyNuroSubHeader: whyDescription,
+        WhyNuroTrustPoints: trustKeywords,
         HomePageFaqs: homepageFaqs,
       });
 
@@ -67,18 +70,20 @@ async function updateSiteSettings(req, res) {
       });
     }
     currentSiteSettings.HeroHeader = heroTitle;
-    currentSiteSettings.HeroImage.publicId = null,
-      currentSiteSettings.HeroSubHeader = heroDescription;
-    currentSiteSettings.HeroImage.url = 'https://res.cloudinary.com/dwwaetdws/image/upload/w_960,c_fill,q_auto,f_auto/v1767189325/realistic-scene-with-elderly-care-senior-people_l1mbnf',
-      currentSiteSettings.TrustHeader = trustSectionTitle;
+    ((currentSiteSettings.HeroImage.publicId = null),
+      (currentSiteSettings.HeroSubHeader = heroDescription));
+    ((currentSiteSettings.HeroImage.url =
+      'https://res.cloudinary.com/dwwaetdws/image/upload/w_960,c_fill,q_auto,f_auto/v1767189325/realistic-scene-with-elderly-care-senior-people_l1mbnf'),
+      (currentSiteSettings.TrustHeader = trustSectionTitle));
     currentSiteSettings.TrustSubHeader = trustSectionDescription;
-    currentSiteSettings.WhyMekinHeader = whyMekinTitle;
-    currentSiteSettings.WhyMekinSubHeader = whyMekinDescription;
-    currentSiteSettings.WhyMekinTrustPoints = trustKeywords;
-    currentSiteSettings.TrustVideo.publicId = null,
-      currentSiteSettings.HomePageFaqs = homepageFaqs;
-    currentSiteSettings.TrustVideo.url = 'https://res.cloudinary.com/dwwaetdws/video/upload/v1770044682/7522364-uhd_3840_2160_25fps_ar8xu2.mp4',
-      await currentSiteSettings.save();
+    currentSiteSettings.WhyNuroHeader = whyTitle;
+    currentSiteSettings.WhyNuroSubHeader = whyDescription;
+    currentSiteSettings.WhyNuroTrustPoints = trustKeywords;
+    ((currentSiteSettings.TrustVideo.publicId = null),
+      (currentSiteSettings.HomePageFaqs = homepageFaqs));
+    ((currentSiteSettings.TrustVideo.url =
+      'https://res.cloudinary.com/dwwaetdws/video/upload/v1770044682/7522364-uhd_3840_2160_25fps_ar8xu2.mp4'),
+      await currentSiteSettings.save());
     res.status(200).json({
       success: true,
       message: 'Site settings have been updated sucessfully',
@@ -119,10 +124,13 @@ async function updateSiteHeroImageAndVideo(req, res) {
         message: 'Hero image added sucessfully',
       });
     } else if (req.file.fieldname === 'video') {
-      const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-        resource_type: 'video',
-        folder: 'videos',
-      });
+      const { secure_url, public_id } = await cloudinary.uploader.upload(
+        req.file.path,
+        {
+          resource_type: 'video',
+          folder: 'videos',
+        },
+      );
 
       currentSiteSettings.TrustVideo.url = secure_url;
       currentSiteSettings.TrustVideo.publicId = public_id;

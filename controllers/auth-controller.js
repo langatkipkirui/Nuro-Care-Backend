@@ -4,6 +4,19 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  path: '/',
+};
+
+const frontendBaseUrl =
+  process.env.FRONTEND_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://nuro-care.vercel.app'
+    : 'http://localhost:5173');
+
 // register a user
 async function registerUser(req, res) {
   try {
@@ -159,10 +172,7 @@ async function verifyUser(req, res) {
       );
       // send the cookie
       res.cookie('token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        path: '/',
+        ...cookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -175,14 +185,11 @@ async function verifyUser(req, res) {
       const token = jwt.sign(
         { id: user._id, email: user.personalInfo.email, role: user.role },
         process.env.JWT_SECRET,
-        { expiresIn: '2min' },
+        { expiresIn: '20min' },
       );
       // send the cookie
       res.cookie('token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        path: '/',
+        ...cookieOptions,
         maxAge: 2 * 60 * 1000,
       });
 
@@ -264,16 +271,14 @@ async function loginUser(req, res) {
 
       // send the cookie
       res.cookie('token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        path: '/',
+        ...cookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       res.status(200).json({
         success: true,
         message: 'Login Successfull. Welcome back.',
         data: user,
+        role: user.role,
       });
     } else {
       // generating short lived  token when remember is not true
@@ -285,16 +290,14 @@ async function loginUser(req, res) {
 
       // send the cookie
       res.cookie('token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        path: '/',
+        ...cookieOptions,
         maxAge: 2 * 60 * 1000,
       });
       res.status(200).json({
         success: true,
         message: 'Login Successfull. Youre Welcome back.',
         data: user,
+        role: user.role,
       });
     }
   } catch (error) {
@@ -335,6 +338,7 @@ async function getUserEmail(req, res) {
 }
 
 async function loginOrCreateUserWithGoogleOAuth(req, res) {
+  console.log('Hey');
   try {
     const user = req?.user;
     const token = jwt.sign(
@@ -345,24 +349,14 @@ async function loginOrCreateUserWithGoogleOAuth(req, res) {
 
     // send the cookie
     res.cookie('token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/',
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
     if (user?.role === 'admin') {
-      if (process.env.NODE_ENV === 'development') {
-        res.redirect('http://localhost:5173/admin-dashboard');
-      } else {
-        res.redirect('https://nuro-care.vercel.app/admin-dashboard');
-      }
+      res.redirect(`${frontendBaseUrl}/admin-dashboard`);
     } else if (user?.role === 'client') {
-      if (process.env.NODE_ENV === 'development') {
-        res.redirect('http://localhost:5173/patient-dashboard');
-      } else {
-        res.redirect('https://nuro-care.vercel.app/patient-dashboard');
-      }
+      res.redirect(`${frontendBaseUrl}/patient-dashboard`);
     }
   } catch (error) {
     res.status(500).json({
@@ -375,11 +369,7 @@ async function loginOrCreateUserWithGoogleOAuth(req, res) {
 
 function logoutUser(req, res) {
   try {
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+    res.clearCookie('token', cookieOptions);
     res.status(200).json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({

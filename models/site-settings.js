@@ -9,7 +9,7 @@ const SiteSchema = new mongoose.Schema({
   HeroSubHeader: {
     type: String,
     default:
-      'At Mekin Home Care, we provide reliable and compassionate home-based healthcare services in Nairobi, tailored to meet the unique needs of every patient.Our experienced caregivers and licensed healthcare professionals deliver quality care in the comfort of your home.',
+      'At Nuro Home Care, we provide reliable and compassionate home-based healthcare services in Nairobi, tailored to meet the unique needs of every patient.Our experienced caregivers and licensed healthcare professionals deliver quality care in the comfort of your home.',
   },
 
   HeroImage: {
@@ -29,13 +29,13 @@ const SiteSchema = new mongoose.Schema({
   TrustHeader: {
     type: String,
     default:
-      'At Mekin Home Care in Nairobi, we don’t just provide professional caregivers — we deliver peace of mind through a rigorous safety framework designed to protect your family.',
+      'At Nuro Home Care in Nairobi, we don’t just provide professional caregivers — we deliver peace of mind through a rigorous safety framework designed to protect your family.',
   },
   // trust section
   TrustSubHeader: {
     type: String,
     default:
-      'At Mekin Home Care in Nairobi, we don’t just provide professional caregivers — we deliver peace of mind through a rigorous safety framework designed to protect your family. Our licensed nurses and trained caregivers treat your loved ones like our own. Safety and compassionate care aren’t just policies at Mekin — they’re promises we keep every single day, whether it’s post-surgical support, chronic disease management, or elderly care at home.',
+      'At Nuro Home Care in Nairobi, we don’t just provide professional caregivers — we deliver peace of mind through a rigorous safety framework designed to protect your family. Our licensed nurses and trained caregivers treat your loved ones like our own. Safety and compassionate care aren’t just policies at Nuro — they’re promises we keep every single day, whether it’s post-surgical support, chronic disease management, or elderly care at home.',
   },
   CEOAvatar: {
     type: String,
@@ -46,7 +46,7 @@ const SiteSchema = new mongoose.Schema({
     type: 'String',
     default: 'Damacline Nyasaka',
   },
-  // why mekin section
+  // why nuro section
   TrustVideo: {
     type: {
       url: {
@@ -61,17 +61,17 @@ const SiteSchema = new mongoose.Schema({
     },
   },
 
-  WhyMekinHeader: {
+  WhyNuroHeader: {
     type: String,
     default:
-      'Why Mekin is the Trusted Choice for Skilled Home-Based Medical Care in Nairobi.',
+      'Why Nuro is the Trusted Choice for Skilled Home-Based Medical Care in Nairobi.',
   },
-  WhyMekinSubHeader: {
+  WhyNuroSubHeader: {
     type: String,
     default:
-      'From 24/7 skilled nursing to specialized rehabilitation, Mekin delivers hospital-grade medical excellence directly to your doorstep, ensuring safety, dignity, and professional recovery at home.',
+      'From 24/7 skilled nursing to specialized rehabilitation, Nuro delivers hospital-grade medical excellence directly to your doorstep, ensuring safety, dignity, and professional recovery at home.',
   },
-  WhyMekinTrustPoints: {
+  WhyNuroTrustPoints: {
     type: Array,
     default: [
       'Licensed & Vetted Professionals',
@@ -93,27 +93,27 @@ const SiteSchema = new mongoose.Schema({
       {
         question: 'What is home based care and how does it work in Nairobi?',
         answer:
-          'Home based care involves professional healthcare services delivered in the comfort of your home. In Nairobi, Mekin Homecare provides licensed nurses and certified caregivers who assess your needs, create a personalized care plan, and deliver ongoing medical or supportive care without the need for hospital visits.',
+          'Home based care involves professional healthcare services delivered in the comfort of your home. In Nairobi, Nuro Homecare provides licensed nurses and certified caregivers who assess your needs, create a personalized care plan, and deliver ongoing medical or supportive care without the need for hospital visits.',
       },
       {
-        question: 'What services does Mekin Home Based Care offer?',
+        question: 'What services does Nuro Home Based Care offer?',
         answer:
-          'Mekin Homecare offers nursing care, post-surgical recovery support, chronic disease management, elderly care, disability support, and palliative care. All services are provided by trained professionals and tailored to each client’s medical and personal needs.',
+          'Nuro Homecare offers nursing care, post-surgical recovery support, chronic disease management, elderly care, disability support, and palliative care. All services are provided by trained professionals and tailored to each client’s medical and personal needs.',
       },
       {
-        question: 'Are Mekin caregivers and nurses qualified and licensed?',
+        question: 'Are Nuro caregivers and nurses qualified and licensed?',
         answer:
-          'Yes. Every Mekin nurse and caregiver is fully licensed or certified, background-checked, insured, and trained through a rigorous multi-step vetting process to ensure safety, professionalism, and compassionate care.',
+          'Yes. Every Nuro nurse and caregiver is fully licensed or certified, background-checked, insured, and trained through a rigorous multi-step vetting process to ensure safety, professionalism, and compassionate care.',
       },
       {
         question: 'How much does home based care cost in Nairobi?',
         answer:
-          'The cost of home based care in Nairobi depends on the type of service, level of care required, and duration. Mekin Homecare offers flexible daily services and structured monthly care plans with transparent pricing and no hidden fees.',
+          'The cost of home based care in Nairobi depends on the type of service, level of care required, and duration. Nuro Homecare offers flexible daily services and structured monthly care plans with transparent pricing and no hidden fees.',
       },
       {
         question: 'Can I get nursing care at home after surgery?',
         answer:
-          'Yes. Mekin Homecare provides post-surgical nursing care at home, including wound care, medication management, mobility assistance, and recovery monitoring to help patients heal safely and comfortably.',
+          'Yes. Nuro Homecare provides post-surgical nursing care at home, including wound care, medication management, mobility assistance, and recovery monitoring to help patients heal safely and comfortably.',
       },
       {
         question: 'Do you offer home care services for elderly patients?',
@@ -124,7 +124,7 @@ const SiteSchema = new mongoose.Schema({
         question:
           'How quickly can home care services start after I request care?',
         answer:
-          'In most cases, Mekin Homecare can assess your needs and begin care within 24 hours of your request, depending on location and service requirements within the Nairobi metropolitan area.',
+          'In most cases, Nuro Homecare can assess your needs and begin care within 24 hours of your request, depending on location and service requirements within the Nairobi metropolitan area.',
       },
       {
         question:
@@ -133,12 +133,12 @@ const SiteSchema = new mongoose.Schema({
           'Yes. We provide regular updates and clear communication to family members, including those living abroad, so they remain informed and confident about their loved one’s care.',
       },
       {
-        question: 'Which areas does Mekin Home Based Care serve?',
+        question: 'Which areas does Nuro Home Based Care serve?',
         answer:
-          'Mekin Homecare currently serves Nairobi and the surrounding metropolitan areas, with plans to expand services across other regions in Kenya.',
+          'Nuro Homecare currently serves Nairobi and the surrounding metropolitan areas, with plans to expand services across other regions in Kenya.',
       },
       {
-        question: 'How do I request home based care services from Mekin?',
+        question: 'How do I request home based care services from Nuro?',
         answer:
           'You can request care by contacting us through our website, WhatsApp, or phone. Our team will guide you through a quick assessment and match you with the right caregiver or nurse.',
       },

@@ -15,8 +15,14 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
 
+const frontendUrl =
+  process.env.FRONTEND_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://nuro-care.vercel.app'
+    : 'http://localhost:5173');
+
 const corsOptions = {
-  origin: 'http://localhost:5000',
+  origin: frontendUrl,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Version'],
   exposedHeaders: ['X-Total-Count', 'Content-Range'],
@@ -33,6 +39,6 @@ app.use('/appointments', appointmentRoutes);
 app.use('/admin', adminRoutes);
 app.use('/public', publicRoutes);
 
-app.listen(process.env.PORT, () =>
-  console.log(`Server running on PORT ${process.env.PORT}`),
+app.listen(process.env.PORT || 5000, () =>
+  console.log(`Server running on PORT ${process.env.PORT || 5000}`),
 );
