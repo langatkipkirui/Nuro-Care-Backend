@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const googleCallbackUrl =
   process.env.GOOGLE_CALLBACK_URL ||
   (process.env.NODE_ENV === 'production'
-    ? 'https://nuro-care-backend.onrender.com/auth/google/callback'
+    ? 'https://nuro-care.vercel.app/api/auth/google/callback'
     : 'http://localhost:5000/auth/google/callback');
 
 passport.use(
