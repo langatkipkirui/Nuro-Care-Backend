@@ -1,12 +1,13 @@
 const passport = require('passport');
 const { Strategy } = require('passport-google-oauth20');
 const User = require('../models/user-model');
-const crypto = require('crypto');
+// Must match a URL the browser hits (Vercel /api proxy in prod) so Set-Cookie
+// lands on the frontend domain. Direct Render callbacks set cookies on onrender.com.
 const googleCallbackUrl =
   process.env.GOOGLE_CALLBACK_URL ||
   (process.env.NODE_ENV === 'production'
     ? 'https://nuro-care.vercel.app/api/auth/google/callback'
-    : 'http://localhost:5000/auth/google/callback');
+    : 'http://localhost:5173/api/auth/google/callback');
 
 passport.use(
   new Strategy(
@@ -24,11 +25,6 @@ passport.use(
         let user = await User.findOne({ 'personalInfo.email': email });
 
         if (!user) {
-          const code = Math.floor(100000 + Math.random() * 900000).toString();
-          const hashedVerificationCode = crypto
-            .createHash('sha256')
-            .update(code)
-            .digest('hex');
           const user = new User({
             personalInfo: {
               firstName: '',
@@ -55,11 +51,11 @@ passport.use(
             auth: {
               passwordHash: null,
               rememberMe: true,
-              emailVerified: false,
+              emailVerified: true,
               phoneVerified: false,
               emailVerification: {
-                codeHash: hashedVerificationCode,
-                expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                codeHash: null,
+                expiresAt: null,
                 attempts: 0,
               },
               provider: 'google',
