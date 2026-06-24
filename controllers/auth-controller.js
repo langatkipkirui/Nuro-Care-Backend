@@ -1,4 +1,4 @@
-const { sendVerificationEmail } = require('../helpers/sendgrid');
+const { sendVerificationEmail } = require('../helpers/resend');
 const User = require('../models/user-model');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -46,8 +46,18 @@ async function registerUser(req, res) {
       .createHash('sha256')
       .update(code)
       .digest('hex');
-    // send  the user the 6 digit code to verify their email
-    sendVerificationEmail(email, code);
+    const emailResult = await sendVerificationEmail(
+      email,
+      code,
+      'Verify your Nuro Home Care account',
+    );
+    if (!emailResult.success) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'Could not send verification email. Please try again in a moment.',
+      });
+    }
     const newlyCreatedUser = new User({
       personalInfo: {
         firstName: '',
@@ -239,6 +249,10 @@ async function loginUser(req, res) {
       user.auth.passwordSetup = {
         tokenHash: hashedSetupToken,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        codeHash: null,
+        codeExpiresAt: null,
+        codeVerified: false,
+        codeAttempts: 0,
       };
       await user.save();
 
@@ -278,11 +292,22 @@ async function loginUser(req, res) {
         .digest('hex');
 
       user.auth.emailVerification.codeHash = hashedVerificationCode;
-      ((user.auth.emailVerification.expiresAt = new Date(
+      user.auth.emailVerification.expiresAt = new Date(
         Date.now() + 60 * 60 * 1000,
-      )),
-        await user.save());
-      sendVerificationEmail(email, code);
+      );
+      await user.save();
+      const emailResult = await sendVerificationEmail(
+        email,
+        code,
+        'Verify your Nuro Home Care account',
+      );
+      if (!emailResult.success) {
+        return res.status(503).json({
+          success: false,
+          message:
+            'Could not send verification email. Please try again in a moment.',
+        });
+      }
       return res.status(400).json({
         success: false,
         message:
@@ -369,40 +394,136 @@ async function getUserEmail(req, res) {
   }
 }
 
+async function findGoogleUserBySetupToken(setupToken) {
+  const user = await User.findOne({
+    'auth.passwordSetup.tokenHash': setupToken,
+  });
+  if (!user) return { error: 'Invalid or expired setup link. Please try signing in again.', status: 404 };
+  if (
+    !user.auth.passwordSetup?.expiresAt ||
+    user.auth.passwordSetup.expiresAt < new Date()
+  ) {
+    return { error: 'This setup link has expired. Please try signing in again.', status: 400 };
+  }
+  if (user.auth.provider !== 'google') {
+    return { error: 'Password setup is only available for Google accounts.', status: 400 };
+  }
+  return { user };
+}
+
 async function getSetupPasswordEmail(req, res) {
   try {
     const { setupToken } = req.body;
-    const user = await User.findOne({
-      'auth.passwordSetup.tokenHash': setupToken,
+    const result = await findGoogleUserBySetupToken(setupToken);
+    if (result.error) {
+      return res.status(result.status).json({ success: false, message: result.error });
+    }
+
+    res.status(200).json({
+      success: true,
+      email: result.user.personalInfo.email,
+      codeVerified: result.user.auth.passwordSetup?.codeVerified === true,
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      error: error?.message,
+    });
+  }
+}
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Invalid or expired setup link. Please try signing in again.',
-      });
+async function sendPasswordSetupCode(req, res) {
+  try {
+    const { setupToken } = req.body;
+    const result = await findGoogleUserBySetupToken(setupToken);
+    if (result.error) {
+      return res.status(result.status).json({ success: false, message: result.error });
     }
 
-    if (
-      !user.auth.passwordSetup?.expiresAt ||
-      user.auth.passwordSetup.expiresAt < new Date()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'This setup link has expired. Please try signing in again.',
-      });
-    }
+    const { user } = result;
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
 
-    if (user.auth.provider !== 'google') {
-      return res.status(400).json({
+    user.auth.passwordSetup.codeHash = codeHash;
+    user.auth.passwordSetup.codeExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    user.auth.passwordSetup.codeVerified = false;
+    user.auth.passwordSetup.codeAttempts = 0;
+    await user.save();
+
+    const emailResult = await sendVerificationEmail(
+      user.personalInfo.email,
+      code,
+      'Verify your email to set your Nuro Home Care password',
+    );
+
+    if (!emailResult.success) {
+      return res.status(503).json({
         success: false,
-        message: 'Password setup is only available for Google accounts.',
+        message: 'Could not send verification email. Please try again shortly.',
       });
     }
 
     res.status(200).json({
       success: true,
-      email: user.personalInfo.email,
+      message: 'A 6-digit verification code has been sent to your email.',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      error: error?.message,
+    });
+  }
+}
+
+async function verifyPasswordSetupCode(req, res) {
+  try {
+    const { setupToken, code } = req.body;
+    const result = await findGoogleUserBySetupToken(setupToken);
+    if (result.error) {
+      return res.status(result.status).json({ success: false, message: result.error });
+    }
+
+    const { user } = result;
+
+    if (
+      !user.auth.passwordSetup?.codeHash ||
+      !user.auth.passwordSetup?.codeExpiresAt ||
+      user.auth.passwordSetup.codeExpiresAt < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code expired. Please request a new code.',
+      });
+    }
+
+    if (user.auth.passwordSetup.codeAttempts > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many attempts. Please request a new code.',
+      });
+    }
+
+    const submittedHash = crypto.createHash('sha256').update(code).digest('hex');
+    if (submittedHash !== user.auth.passwordSetup.codeHash) {
+      user.auth.passwordSetup.codeAttempts += 1;
+      await user.save();
+      return res.status(400).json({
+        success: false,
+        message: 'The verification code you entered is incorrect.',
+      });
+    }
+
+    user.auth.passwordSetup.codeVerified = true;
+    user.auth.passwordSetup.codeHash = null;
+    user.auth.passwordSetup.codeExpiresAt = null;
+    user.auth.passwordSetup.codeAttempts = 0;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified. You can now set your password.',
     });
   } catch (error) {
     res.status(500).json({
@@ -424,31 +545,18 @@ async function setupPasswordForGoogleUser(req, res) {
       });
     }
 
-    const user = await User.findOne({
-      'auth.passwordSetup.tokenHash': setupToken,
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Invalid or expired setup link. Please try signing in again.',
-      });
+    const result = await findGoogleUserBySetupToken(setupToken);
+    if (result.error) {
+      return res.status(result.status).json({ success: false, message: result.error });
     }
 
-    if (
-      !user.auth.passwordSetup?.expiresAt ||
-      user.auth.passwordSetup.expiresAt < new Date()
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'This setup link has expired. Please try signing in again.',
-      });
-    }
+    const { user } = result;
 
-    if (user.auth.provider !== 'google') {
-      return res.status(400).json({
+    if (user.auth.passwordSetup?.codeVerified !== true) {
+      return res.status(403).json({
         success: false,
-        message: 'Password setup is only available for Google accounts.',
+        message: 'Please verify your email with the 6-digit code first.',
+        requiresCodeVerification: true,
       });
     }
 
@@ -457,7 +565,14 @@ async function setupPasswordForGoogleUser(req, res) {
 
     user.auth.passwordHash = hashedPassword;
     user.auth.rememberMe = rememberMe ?? false;
-    user.auth.passwordSetup = { tokenHash: null, expiresAt: null };
+    user.auth.passwordSetup = {
+      tokenHash: null,
+      expiresAt: null,
+      codeHash: null,
+      codeExpiresAt: null,
+      codeVerified: false,
+      codeAttempts: 0,
+    };
     await user.save();
 
     const expiresIn = rememberMe ? '7d' : '5min';
@@ -532,6 +647,8 @@ module.exports = {
   loginUser,
   getUserEmail,
   getSetupPasswordEmail,
+  sendPasswordSetupCode,
+  verifyPasswordSetupCode,
   setupPasswordForGoogleUser,
   loginOrCreateUserWithGoogleOAuth,
   logoutUser,

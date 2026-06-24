@@ -107,6 +107,10 @@ const UserSchema = new mongoose.Schema(
       passwordSetup: {
         tokenHash: String,
         expiresAt: Date,
+        codeHash: String,
+        codeExpiresAt: Date,
+        codeVerified: { type: Boolean, default: false },
+        codeAttempts: { type: Number, default: 0 },
       },
     },
 

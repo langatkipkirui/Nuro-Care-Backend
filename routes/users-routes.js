@@ -6,6 +6,8 @@ const {
   loginUser,
   getUserEmail,
   getSetupPasswordEmail,
+  sendPasswordSetupCode,
+  verifyPasswordSetupCode,
   setupPasswordForGoogleUser,
   loginOrCreateUserWithGoogleOAuth,
   logoutUser,
@@ -18,6 +20,8 @@ userRoutes.post('/verify-user', verifyUser);
 userRoutes.post('/login-user', loginUser);
 userRoutes.post('/get-user-email', getUserEmail);
 userRoutes.post('/get-setup-password-email', getSetupPasswordEmail);
+userRoutes.post('/send-password-setup-code', sendPasswordSetupCode);
+userRoutes.post('/verify-password-setup-code', verifyPasswordSetupCode);
 userRoutes.post('/setup-password', setupPasswordForGoogleUser);
 userRoutes.post('/authenticate-user', userAuth);
 userRoutes.post('/logout-user', logoutUser);

@@ -1,4 +1,5 @@
 const Appointment = require('../models/appointments-models');
+const User = require('../models/user-model');
 const jwt = require('jsonwebtoken');
 // create a new appointment handler
 async function newAppointment(req, res) {
@@ -77,7 +78,29 @@ async function newAppointment(req, res) {
       urgency,
     });
 
-    newlyCreatedAppointment.save();
+    await newlyCreatedAppointment.save();
+
+    // Sync booking stats on the user profile when logged-in client books
+    try {
+      const user = await User.findOne({ 'personalInfo.email': email });
+      if (user) {
+        user.clientProfile.hasBookedService = true;
+        user.clientProfile.totalBookings += 1;
+        if (user.location?.area === '' && area) user.location.area = area;
+        if (user.personalInfo.phone === '' && phone) {
+          user.personalInfo.phone = phone;
+        }
+        if (user.personalInfo.firstName === '' && fullName) {
+          const parts = fullName.trim().split(' ');
+          user.personalInfo.firstName = parts[0] || '';
+          user.personalInfo.lastName = parts.slice(1).join(' ') || '';
+        }
+        await user.save();
+      }
+    } catch (syncErr) {
+      console.log('User profile sync after booking:', syncErr?.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Appointment made successfully',
@@ -106,15 +129,9 @@ async function fetchPatientAppointments(req, res) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userAppointments = await Appointment.find({ email: decoded.email });
 
-    if (!userAppointments) {
-      return res.status(404).json({
-        success: false,
-        message: 'You do not have any appointments now.',
-      });
-    }
     res.status(200).json({
       success: true,
-      userAppointments,
+      userAppointments: userAppointments || [],
     });
   } catch (error) {
     res.status(500).json({
