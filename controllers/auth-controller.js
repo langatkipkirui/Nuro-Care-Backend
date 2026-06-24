@@ -24,6 +24,14 @@ async function registerUser(req, res) {
     // check if the user exist in db
     const user = await User.findOne({ 'personalInfo.email': email });
     if (user) {
+      if (user.auth.provider === 'google' && !user.auth.passwordHash) {
+        return res.status(403).json({
+          success: false,
+          requiresPasswordSetup: true,
+          message:
+            'An account with this email exists via Google. Sign in and set a password, or use Google sign-in.',
+        });
+      }
       return res.status(403).json({
         success: false,
         message: 'The user already exist. Please Login.',
@@ -73,7 +81,7 @@ async function registerUser(req, res) {
           expiresAt: new Date(Date.now() + 60 * 60 * 1000),
           attempts: 0,
         },
-        provider: null,
+        provider: 'emailpass',
       },
 
       // 7. Client Profile
@@ -220,14 +228,38 @@ async function loginUser(req, res) {
           'We could not find an account related to this email, Please create a new account.',
       });
     }
-    // for users who signed in with google
-    if (user.auth.provider === 'google') {
+    // Google accounts without a password must set one before email sign-in
+    if (user.auth.provider === 'google' && !user.auth.passwordHash) {
+      const setupToken = crypto.randomBytes(32).toString('hex');
+      const hashedSetupToken = crypto
+        .createHash('sha256')
+        .update(setupToken)
+        .digest('hex');
+
+      user.auth.passwordSetup = {
+        tokenHash: hashedSetupToken,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      };
+      await user.save();
+
+      return res.status(403).json({
+        success: false,
+        requiresPasswordSetup: true,
+        message:
+          'This account was created with Google. Set a password to sign in with email.',
+        setupToken: hashedSetupToken,
+        email: user.personalInfo.email,
+      });
+    }
+
+    if (!user.auth.passwordHash) {
       return res.status(400).json({
         success: false,
         message:
-          'This account was created using Google. Please sign in with Google and set your password in account settings.',
+          'No password is set for this account. Please sign in with Google or contact support.',
       });
     }
+
     // check if the password matches
     const comparePass = await bcrypt.compare(password, user.auth.passwordHash);
     if (comparePass === false) {
@@ -337,8 +369,122 @@ async function getUserEmail(req, res) {
   }
 }
 
+async function getSetupPasswordEmail(req, res) {
+  try {
+    const { setupToken } = req.body;
+    const user = await User.findOne({
+      'auth.passwordSetup.tokenHash': setupToken,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid or expired setup link. Please try signing in again.',
+      });
+    }
+
+    if (
+      !user.auth.passwordSetup?.expiresAt ||
+      user.auth.passwordSetup.expiresAt < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'This setup link has expired. Please try signing in again.',
+      });
+    }
+
+    if (user.auth.provider !== 'google') {
+      return res.status(400).json({
+        success: false,
+        message: 'Password setup is only available for Google accounts.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      email: user.personalInfo.email,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      error: error?.message,
+    });
+  }
+}
+
+async function setupPasswordForGoogleUser(req, res) {
+  try {
+    const { setupToken, password, rememberMe } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters.',
+      });
+    }
+
+    const user = await User.findOne({
+      'auth.passwordSetup.tokenHash': setupToken,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid or expired setup link. Please try signing in again.',
+      });
+    }
+
+    if (
+      !user.auth.passwordSetup?.expiresAt ||
+      user.auth.passwordSetup.expiresAt < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'This setup link has expired. Please try signing in again.',
+      });
+    }
+
+    if (user.auth.provider !== 'google') {
+      return res.status(400).json({
+        success: false,
+        message: 'Password setup is only available for Google accounts.',
+      });
+    }
+
+    const genSalt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, genSalt);
+
+    user.auth.passwordHash = hashedPassword;
+    user.auth.rememberMe = rememberMe ?? false;
+    user.auth.passwordSetup = { tokenHash: null, expiresAt: null };
+    await user.save();
+
+    const expiresIn = rememberMe ? '7d' : '5min';
+    const maxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 2 * 60 * 1000;
+    const token = jwt.sign(
+      { id: user._id, email: user.personalInfo.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn },
+    );
+
+    res.cookie('token', token, { ...cookieOptions, maxAge });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password set successfully. You can now sign in with email or Google.',
+      role: user.role,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      error: error?.message,
+    });
+  }
+}
+
 async function loginOrCreateUserWithGoogleOAuth(req, res) {
-  console.log('Hey');
   try {
     const user = req?.user;
     const token = jwt.sign(
@@ -385,6 +531,8 @@ module.exports = {
   verifyUser,
   loginUser,
   getUserEmail,
+  getSetupPasswordEmail,
+  setupPasswordForGoogleUser,
   loginOrCreateUserWithGoogleOAuth,
   logoutUser,
 };

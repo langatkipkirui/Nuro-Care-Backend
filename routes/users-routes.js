@@ -5,6 +5,8 @@ const {
   verifyUser,
   loginUser,
   getUserEmail,
+  getSetupPasswordEmail,
+  setupPasswordForGoogleUser,
   loginOrCreateUserWithGoogleOAuth,
   logoutUser,
 } = require('../controllers/auth-controller');
@@ -15,6 +17,8 @@ userRoutes.post('/register-user', registerUser);
 userRoutes.post('/verify-user', verifyUser);
 userRoutes.post('/login-user', loginUser);
 userRoutes.post('/get-user-email', getUserEmail);
+userRoutes.post('/get-setup-password-email', getSetupPasswordEmail);
+userRoutes.post('/setup-password', setupPasswordForGoogleUser);
 userRoutes.post('/authenticate-user', userAuth);
 userRoutes.post('/logout-user', logoutUser);
 

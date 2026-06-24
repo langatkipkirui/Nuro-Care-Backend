@@ -101,7 +101,12 @@ const UserSchema = new mongoose.Schema(
       },
       provider: {
         type: String,
-        default: 'local',
+        enum: ['google', 'emailpass'],
+        default: 'emailpass',
+      },
+      passwordSetup: {
+        tokenHash: String,
+        expiresAt: Date,
       },
     },
 
